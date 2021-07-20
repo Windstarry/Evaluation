@@ -5,6 +5,7 @@ from utils.test_login import Test_loggin
 from utils.config import login_url,contents,savefile,filecontents,setindex_col,headers
 import requests,re
 
+
 def main():
     #运行程序
     test_loggin = Test_loggin(login_url=login_url)
@@ -39,18 +40,21 @@ def first_evaluate():
             token = get_url_token(resp.text)        
             cookie = get_cookie(resp.cookies)
             headers.update(cookie)
-            first_post_data(url,headers,projid,servicecode,evaluatorname,projectname,cardnumber,tel,token,projectno)
+            msg=first_post_data(url,headers,projid,servicecode,evaluatorname,projectname,cardnumber,tel,token,projectno)['msg']
+            #first_post_data(url,headers,projid,servicecode,evaluatorname,projectname,cardnumber,tel,token,projectno)
             second_post_data(url,headers,projid,servicecode,evaluatorname,projectname,cardnumber,tel,token,projectno)
             third_post_data(url,headers,projid,servicecode,evaluatorname,projectname,cardnumber,tel,token,projectno)
-            msg=first_post_data(url,headers,projid,servicecode,evaluatorname,projectname,cardnumber,tel,token,projectno)['msg']
+            
             if msg =='评价成功！' or msg =='重复评价！！！':
                 he.resultstate(i)
             if i%400==0:
                 he.save_excle(savefile)
+
     he.save_excle(savefile)
     #将已评价完的数据保持到汇总表中
     ec=ExcelConcat(savefile,filecontents,filecontents,setindex_col)
     ec.excle_concat()
+
 
 def get_url_token(responsetext):
     pattern = 'id="token" value="(.*?)">'
@@ -197,9 +201,11 @@ if __name__ == '__main__':
     # cityname='县税务局'
     # cityid='001003018006016003018'
     # cityname='修武县人力资源和社会保障局'
-    #设置读取页面起始结束页
+    # cityid='001003018006016003013'
+    # cityname='县公安局'
     # cityid="001003018006016003009"
     # cityname="修武县市场监督管理局"
+    #设置读取页面起始结束页
     pagestart=1
     pageend=3
     # #运行程序

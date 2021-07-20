@@ -107,6 +107,8 @@ class HandleExcle(object):
             tel_num = "0391-7873031"
         elif tel_judge_two:
             tel_num = "0391-7873031"
+        elif tel_num == '无':
+            tel_num = "0391-7118602"
         return tel_num
 
 
