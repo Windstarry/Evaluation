@@ -1,74 +1,75 @@
+# -*- coding:utf-8 -*-
+from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
+import time
 import json
 import os
-import time
-from playwright.sync_api import sync_playwright
 from datetime import datetime
-from pathlib import Path 
-from utils.config import USENAME,PASSWORD
+from pathlib import Path
+import requests
+from utils.config import USENAME,PASSWORD,EVALUATIONNAME
 
 
-class Test_loggin(object):
+class TestLogin(object):
  
-    def __init__(self, login_url,cookie_path='./source',cookie_name = 'cookies_bjxxk.txt', expiration_time = 30):
+    def __init__(self, login_url,home_url,cookie_path='.\source',cookie_name = 'cookies_bjxxk.txt', expiration_time = 60):
         '''
         :param login_url: 登录网址
         :param home_url: 首页网址
         :param cookie_path: cookie文件存放路径
         :param cookie_path: 文件命名
-        :param expiration_time: cookie过期时间,默认30分钟
+        :param expiration_time: cookie过期时间,默认60分钟
         '''
         self.login_url = login_url
+        self.home_url= home_url
         self.cookie_path = cookie_path
         self.cookie_name = cookie_name
         self.expiration_time = expiration_time
- 
+
 
     def get_cookie(self):
         '''登录获取cookie'''
-        playwright = sync_playwright().start()
-        #无头浏览器模式
-        browser = playwright.chromium.launch()
-        #打开浏览器模式
-        #browser = playwright.chromium.launch(headless=False,slowMo=200)
-        context = browser.new_context()
-        #设置防爬的参数
-        context.add_init_script("""
-                        const newProto = navigator.__proto__;
-                        delete newProto.webdriver;
-                        navigator.__proto__ = newProto;
+        #设置driver启动参数
+        driver_path='.\source\chromedriver.exe'
+        option = Options()
+        option.add_experimental_option('excludeSwitches', ['enable-automation'])
+        option.add_experimental_option('useAutomationExtension', False)
+        driver = webdriver.Chrome(executable_path=driver_path,options=option)
+        driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+            "source": """
+                Object.defineProperty(navigator, 'webdriver', {
+                get: () => undefined
+                })
             """
-            ) 
-        #设置超时时间为30s
-        context.set_default_timeout(30000)
-        page = context.new_page()
-        #打开政务服务网登陆网址
-        page.goto(self.login_url,wait_until="load")
-        # Fill input[name="username"]
-        page.fill("input[name=\"username\"]", USENAME)
-        # Fill input[name="password"]
-        page.fill("input[name=\"password\"]", PASSWORD)
-        # Check input[name="noLogin"]
-        page.check("input[name=\"noLogin\"]")
-        with page.expect_navigation():
-            page.click("//button[normalize-space(.)='登录']")
-        print("登陆成功")
-        page.wait_for_selector("//li[normalize-space(.)='办件信息库']/img")
-        with page.expect_popup() as popup_info:
-            page.click("//li[normalize-space(.)='办件信息库']/img")
-        page1 = popup_info.value
-        time.sleep(3)
-        with open('./source/cookies_bjxxk.txt', 'w') as cookief:
-        # 将cookies保存为json格式
-            cookief.write(json.dumps(context.cookies()))
-        print("cookies保存完成")
-        page1.close()
-        context.close()
-        browser.close()
+            })
+        driver.maximize_window()
+        driver.implicitly_wait(10)
+        #完成获取cookie步骤
+        driver.get(self.login_url)
+        driver.find_element_by_name('username').send_keys(USENAME)
+        driver.find_element_by_name('password').send_keys(PASSWORD)
+        driver.find_element_by_name('noLogin').click()
+        driver.find_element_by_id('btn-submit-login').click()
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'system')))
+        driver.find_element_by_xpath(r'//li[@class="appLi"][9]').click()
+        driver.switch_to.window(driver.window_handles[-1])
+        time.sleep(2)
+        driver.get(self.home_url)
+        time.sleep(2)
+        #创建文本覆盖保存cookie
+        with open(os.path.join(self.cookie_path, self.cookie_name), 'w') as cookief:    
+            # 将cookies保存为json格式
+            cookief.write(json.dumps(driver.get_cookies()))
+        print("cookie保存成功")
+        driver.close()
 
-    
+
     def judge_cookie(self):
         '''获取最新的cookie文件，判断是否过期'''
-        my_file = Path("./source/cookies_bjxxk.txt")
+        my_file = Path(".\source\cookies_bjxxk.txt")
         if my_file.is_file():
             new_cookie = os.path.join(self.cookie_path, "cookies_bjxxk.txt")
             #new_cookie = os.path.join(self.cookie_path, cookie_list2[-1])    # 获取最新cookie文件的全路径 
@@ -86,11 +87,11 @@ class Test_loggin(object):
         else:
             self.get_cookie()
 
-
-    def get_jsessionid(self):
+    
+    def get_session_value(self):
         '''获取JSESSIONID操作'''
         self.judge_cookie()  # 首先判断cookie是否已获取，是否过期
-        print("获取JSESSIONID中")
+        print("获取SESSION中")
         with open(os.path.join(self.cookie_path, self.cookie_name),'r') as cookief:
             #使用json读取cookies 注意读取的是文件 所以用load而不是loads
             cookieslist = json.load(cookief)
@@ -102,6 +103,6 @@ class Test_loggin(object):
                     del cookie['expiry']
                 cookies_dict[cookie['name']] = cookie['value']
         print(cookies_dict)
-        jsessionid=cookies_dict['JSESSIONID']
-        return jsessionid
+        session_value=cookies_dict["SESSION"]
+        return session_value
 

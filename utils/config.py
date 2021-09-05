@@ -2,6 +2,9 @@
 
 #test_login类中需要的参数
 login_url = 'http://59.207.104.12:8090//login'
+home_url = "http://59.207.104.4:8062/bjxt/preApasinfo/searchBySynthesis"
+
+#登录账号
 USENAME="焦作市政数局_政务2019"
 PASSWORD="Abc123#$"
 #电话邀评账号

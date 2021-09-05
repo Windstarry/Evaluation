@@ -13,7 +13,6 @@ class HandleExcle(object):
         self.first_url = "http://59.207.104.196:8081/ycslypt_web/pingjia.action?sid={}&projid={}&projectname={}&cardnumber={}&evaluatorName={}&evaluatefrom=4&projectNo={}&proStatus=3"
         self.second_url = "http://59.207.104.196:8081/ycslypt_web/pingjia.action?sid={}&projid={}&projectname={}&cardnumber={}&evaluatorName={}&evaluatefrom=4&projectNo={}&proStatus=2&evaluteCount=2&evaluatecount=2"
         self.third_url = "http://59.207.104.196:8081/ycslypt_web/pingjia.action?sid={}&projid={}&projectname={}&cardnumber={}&evaluatorName={}&evaluatefrom=4&projectNo={}&proStatus=1&evaluteCount=3&evaluatecount=3"
-        #self.base_url = "http://59.207.104.196:8081/ycslypt_web/pingjia.action?fn=save&projid={}&serviceCode={}&evaluatefrom=4&userType&evaluatorName={}&evaluteCount=2&projectname={}&isOpened=1&checkState=1&evaluateContent&satisfactionEvaluate=5&syncStatus=I&isAboveLegalday=2&isMediation=2&serviceAttitudeEvaluate=1&isAnonymity=2&serviceAttitudeReason&workAttitudeEvaluate=1&workAttitudeReason=&evaluatorCardnumber={}&belongsystem&evaluatecount=2&evaluatorPhone={}&token=cdeb4ce0a0ea48b86c7be8fba9a412ca&huaKuaiFlag=true&checkFlag=notRobot&projectNo={}&proStatus=2&evaluateDetail="
     
     def get_tel(self,x):
         tel=self.df["手机号码"].at[x]
@@ -36,6 +35,8 @@ class HandleExcle(object):
     
     def get_idcard(self,x):
         idcard=self.df["证件号码"].at[x]
+        if idcard=='空':
+            idcard=self.df["联系人证件号码"].at[x]
         return idcard
 
 
@@ -59,16 +60,17 @@ class HandleExcle(object):
 
 
     def get_implementcode(self,x):
-        servicecode = self.get_servicecode(x)
-        projid = self.get_projid(x)
-        if servicecode in gic.keys():
-            implementcode=str(gic[servicecode])+projid[7:15]+projid[-4:]
-            return implementcode
-        else:
-            implementcode="错误"
-            print("没有找到该事项")
-            return implementcode
-
+        # servicecode = self.get_servicecode(x)
+        # projid = self.get_projid(x)
+        # if servicecode in gic.keys():
+        #     implementcode=str(gic[servicecode])+projid[7:15]+projid[-4:]
+        #     return implementcode
+        # else:
+        #     implementcode="错误"
+        #     print("没有找到该事项")
+        #     return implementcode
+        implementcode = self.df["评价状态"].at[x]
+        return implementcode
 
     def resultstate(self,x):
         self.df.loc[x,"评价状态"]="已评价"

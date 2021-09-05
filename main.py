@@ -1,17 +1,16 @@
 # coding:utf-8
 from utils.handleexcel import HandleExcle,ExcleRemoveDupl,ExcelConcat,write_excle
-from utils.postcontent import ProjectContent,CommitContent
-from utils.test_login import Test_loggin
-from utils.config import login_url,contents,savefile,filecontents,setindex_col,headers
-import requests,re
+from utils.postcontent import ProjectContent
+from utils.test_login import TestLogin
+from utils.config import login_url,home_url,contents,savefile,filecontents,setindex_col,headers
+import requests,re,time,datetime
 
 
-def main():
+def main(date_time,start_time,cityid,cityname):
     #运行程序
-    test_loggin = Test_loggin(login_url=login_url)
-    jsessionid=test_loggin.get_jsessionid()
-    for i in range(pagestart,pageend):
-        procontens=ProjectContent(i,cityid,cityname,jsessionid).get_projectlist()
+    test_loggin = TestLogin(login_url=login_url,home_url=home_url)
+    session_value=test_loggin.get_session_value()
+    procontens=ProjectContent(date_time,start_time,cityid,cityname,session_value).get_projectlist()
     write_excle(contents,savefile)
     print("{}保存完毕".format(savefile))
     #去除申报号在已评价事项里办件信息
@@ -41,15 +40,14 @@ def first_evaluate():
             cookie = get_cookie(resp.cookies)
             headers.update(cookie)
             msg=first_post_data(url,headers,projid,servicecode,evaluatorname,projectname,cardnumber,tel,token,projectno)['msg']
-            #first_post_data(url,headers,projid,servicecode,evaluatorname,projectname,cardnumber,tel,token,projectno)
-            second_post_data(url,headers,projid,servicecode,evaluatorname,projectname,cardnumber,tel,token,projectno)
-            third_post_data(url,headers,projid,servicecode,evaluatorname,projectname,cardnumber,tel,token,projectno)
-            
+            # first_post_data(url,headers,projid,servicecode,evaluatorname,projectname,cardnumber,tel,token,projectno)
+            # second_post_data(url,headers,projid,servicecode,evaluatorname,projectname,cardnumber,tel,token,projectno)
+            # third_post_data(url,headers,projid,servicecode,evaluatorname,projectname,cardnumber,tel,token,projectno)            
             if msg =='评价成功！' or msg =='重复评价！！！':
                 he.resultstate(i)
-            if i%400==0:
+            if i%2000==0:
                 he.save_excle(savefile)
-
+        #time.sleep(1)
     he.save_excle(savefile)
     #将已评价完的数据保持到汇总表中
     ec=ExcelConcat(savefile,filecontents,filecontents,setindex_col)
@@ -101,7 +99,8 @@ def first_post_data(url,headers,projid,servicecode,evaluatorname,projectname,car
                 'proStatus': '3',
          } 
         requests.packages.urllib3.disable_warnings()
-        resp = requests.post(url=url, headers=headers, data=payload,verify=False,timeout=200)
+        post_url = "http://59.207.104.196:8081/evaluation-web/api/v1/zwfw/evaluate/save.do"
+        resp = requests.post(url=post_url, headers=headers, data=payload,verify=False,timeout=200)
         print(resp.json())
         return resp.json()
 
@@ -141,7 +140,8 @@ def second_post_data(url,headers,projid,servicecode,evaluatorname,projectname,ca
                 'proStatus': '2',
          } 
         requests.packages.urllib3.disable_warnings()
-        resp = requests.post(url=url, headers=headers, data=payload,verify=False,timeout=200)
+        post_url = "http://59.207.104.196:8081/evaluation-web/api/v1/zwfw/evaluate/save.do"
+        resp = requests.post(url=post_url, headers=headers, data=payload,verify=False,timeout=200)
         print(resp.json())
 
 
@@ -180,7 +180,8 @@ def third_post_data(url,headers,projid,servicecode,evaluatorname,projectname,car
                 'proStatus': '1',
          } 
         requests.packages.urllib3.disable_warnings()
-        resp = requests.post(url=url, headers=headers, data=payload,verify=False,timeout=200)
+        post_url = "http://59.207.104.196:8081/evaluation-web/api/v1/zwfw/evaluate/save.do"
+        resp = requests.post(url=post_url, headers=headers, data=payload,verify=False,timeout=200)
         print(resp.json())
 
 
@@ -196,20 +197,12 @@ def get_cookie(responsecookies):
 
 if __name__ == '__main__':
     cityid='001003018006016'
+    #cityid = "001003018002021" #市住房公积金
     cityname='修武县'
-    # cityid='001003018006016003017'
-    # cityname='县税务局'
-    # cityid='001003018006016003018'
-    # cityname='修武县人力资源和社会保障局'
-    # cityid='001003018006016003013'
-    # cityname='县公安局'
-    # cityid="001003018006016003009"
-    # cityname="修武县市场监督管理局"
-    #设置读取页面起始结束页
-    pagestart=1
-    pageend=3
     # #运行程序
-    main()
+    date_time = datetime.date.today()
+    start_time = datetime.date.today()-datetime.timedelta(days=7)
+    main(date_time,start_time,cityid,cityname)
     first_evaluate()
 
 
